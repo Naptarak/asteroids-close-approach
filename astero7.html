@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>NASA API Asteroid Data</title>
+</head>
+<body>
+    <h1>NASA API Asteroid Data</h1>
+    <div id="asteroidData"></div>
+
+    <script type="text/javascript">
+        // Replace with your own NASA API key
+        var apiKey = "79luSDdHXlz8K5v3gVGcdPJhOjHdXdIMfBzQxxha";
+
+        // Get today's date in YYYY-MM-DD format
+        var today = new Date();
+        var month = (today.getMonth() + 1).toString().padStart(2, '0');
+        var day = today.getDate().toString().padStart(2, '0');
+        var date = today.getFullYear() + '-' + month + '-' + day;
+
+        // Build the API URL
+        var apiUrl = "https://api.nasa.gov/neo/rest/v1/feed?start_date=" + date + "&end_date=" + date + "&api_key=" + apiKey;
+
+        // Make the API request using fetch
+        fetch(apiUrl)
+            .then(response => response.json())
+            .then(data => {
+                if (data.near_earth_objects[date].length === 0) {
+                    document.getElementById("asteroidData").innerHTML = "Nincs fenyegető aszteroida";
+                } else {
+                    // Get the array of asteroids
+                    var asteroids = data.near_earth_objects[date];
+
+                    // Sort the array of asteroids by close approach date and time
+                    asteroids.sort(function(a, b) {
+                        var dateA = new Date(a.close_approach_data[0].close_approach_date_full);
+                        var dateB = new Date(b.close_approach_data[0].close_approach_date_full);
+                        return dateA - dateB;
+                    });
+
+                    // Loop through all asteroids and display their data
+                    var asteroidHTML = "";
+                    for (var i = 0; i < asteroids.length; i++) {
+                        var asteroid = asteroids[i];
+
+                        // Convert close approach date and time to user's local time
+                        var closeApproachDateTimeUTC = new Date(asteroid.close_approach_data[0].close_approach_date_full);
+
+                        var closeApproachDateTimeLocal = closeApproachDateTimeUTC.toLocaleString();
+
+                        // Convert miss distance from miles to kilometers
+                        var missDistanceKm = parseInt(asteroid.close_approach_data[0].miss_distance.miles) * 1.60934;
+
+                        // Get estimated diameter in kilometers
+                        var estimatedDiameterMinKm = asteroid.estimated_diameter.kilometers.estimated_diameter_min;
+                        var estimatedDiameterMaxKm = asteroid.estimated_diameter.kilometers.estimated_diameter_max;
+
+                        // Get relative velocity in kilometers per hour
+                        var relativeVelocityKph = parseFloat(asteroid.close_approach_data[0].relative_velocity.kilometers_per_hour);
+
+                        asteroidHTML += "<h2>" + asteroid.name + "</h2>";
+                        asteroidHTML += "<p>Close Approach Date & Time: " + closeApproachDateTimeLocal + "</p>";
+                        asteroidHTML += "<p>Miss Distance: " +
+                            missDistanceKm.toLocaleString() + " km</p>";
+                        asteroidHTML += "<p>Estimated Diameter: " +
+                            estimatedDiameterMinKm.toFixed(2) + " - " +
+                            estimatedDiameterMaxKm.toFixed(2) + " km</p>";
+                        asteroidHTML += "<p>Relative Velocity: " +
+                            relativeVelocityKph.toLocaleString() + " km/h</p>";
+                    }
+                    document.getElementById("asteroidData").innerHTML = asteroidHTML;
+                }
+            });
+    </script>
+</body>
+</html>
